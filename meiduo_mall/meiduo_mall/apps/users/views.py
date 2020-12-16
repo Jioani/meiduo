@@ -16,3 +16,15 @@ class UsernameCountView(View):
         return JsonResponse({"code": 0,
                              "message": "OK",
                              "count": count})
+
+
+class MobileCountView(View):
+    def get(self, request, mobile):
+        try:
+            count = User.objects.filter(mobile=mobile).count()
+        except:
+            return JsonResponse({"code": 400,
+                                 "message": "数据库操作失败"})
+        return JsonResponse({"code": 0,
+                             "message": "OK",
+                             "count": count})
