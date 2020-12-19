@@ -55,6 +55,8 @@ class SMSCodeView(View):
         pl.set("sms_%s" % mobile, sms_code, 300)
         pl.set("send_flag_%s" % mobile, 1, 60)
         pl.execute()
+        # from celery_tasks.sms.tasks import send_sms_code
+        # send_sms_code.delay(mobile, sms_code)
         CCP().send_template_sms(mobile, [sms_code, 5], 1)
         return JsonResponse({"code": 0,
                              "message": "发送短信成功"})
