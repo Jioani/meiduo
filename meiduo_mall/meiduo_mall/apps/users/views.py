@@ -1,7 +1,7 @@
 import json
 import re
 
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.shortcuts import render
@@ -130,9 +130,20 @@ class LoginView(View):
             return JsonResponse({"code": "400",
                                  "message": "账号用户名或密码错误"})
         login(request, user)
-        if not remember:
-            request.session.set_expiry(0)
         response = JsonResponse({"code": 0,
                                  "message": "登录成功"})
+        if not remember:
+            request.session.set_expiry(0)
+            response.set_cookie("username", user.username)
+            return response
         response.set_cookie("username", user.username, max_age=30 * 24 * 3600)
+        return response
+
+
+class LogoutView(View):
+    def delete(self, request):
+        logout(request)
+        response = JsonResponse({"code": 0,
+                                 "message": "ok"})
+        response.delete_cookie("username")
         return response
