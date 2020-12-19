@@ -89,7 +89,7 @@ var vm = new Vue({
             }
         },
         check_phone: function (){
-            var re = /^1[345789]\d{9}$/;
+            var re = /^1[3456789]\d{9}$/;
             if(re.test(this.mobile)) {
                 this.error_phone = false;
             } else {
