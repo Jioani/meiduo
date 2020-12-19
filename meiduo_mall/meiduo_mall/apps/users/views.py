@@ -94,8 +94,10 @@ class RegisterView(View):
             return JsonResponse({'code': 400,
                                  'message': '数据库保存错误'})
         # ③ 返回响应
-        return JsonResponse({'code': 0,
-                             'message': 'OK'})
+        response = JsonResponse({'code': 0,
+                                 'message': 'OK'})
+        response.set_cookie("username", user.username, max_age=30 * 24 * 3600)
+        return response
 
 
 class CSRFTokenView(View):
@@ -130,5 +132,7 @@ class LoginView(View):
         login(request, user)
         if not remember:
             request.session.set_expiry(0)
-        return JsonResponse({"code": 0,
-                             "message": "登录成功"})
+        response = JsonResponse({"code": 0,
+                                 "message": "登录成功"})
+        response.set_cookie("username", user.username, max_age=30 * 24 * 3600)
+        return response
