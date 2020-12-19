@@ -119,6 +119,10 @@ class LoginView(View):
         if not all([username, password]):
             return JsonResponse({"code": 400,
                                  "message": "缺少必传参数"})
+        if re.match("^1[3-9]\d{9}$", username):
+            User.USERNAME_FIELD = "mobile"
+        else:
+            User.USERNAME_FIELD = "username"
         user = authenticate(username=username, password=password)
         if user is None:
             return JsonResponse({"code": "400",
