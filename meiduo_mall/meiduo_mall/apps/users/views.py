@@ -1,7 +1,9 @@
 import json
 import re
 
+from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
+from django.core.mail import send_mail
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.shortcuts import render
@@ -179,9 +181,38 @@ class UserEmailView(LoginRequiredMixin, View):
         except Exception as e:
             return JsonResponse({"code": 400,
                                  "message": "邮箱设置失败"})
+        # from celery_tasks.email.tasks import send_verify_email
+        # verify_url = "http://邮件验证地址"
+        # send_verify_email.delay(email, verify_url)
+        verify_url = user.generate_verify_email_url()
+        subject = "美多商城邮箱验证"
+        html_message = '<p>尊敬的用户您好！</p>' \
+                       '<p>感谢您使用美多商城</p>' \
+                       '<p>您的邮箱为: %s 。请点击此链接激活您的邮箱：</p>' \
+                       '<p><a href="%s">%s<a></p>' % (email, verify_url, verify_url)
+        send_mail(subject, '', settings.EMAIL_FROM, [email], html_message=html_message)
         return JsonResponse({"code": 0,
                              "message": "OK"})
 
+
+class EmailVerifyView(View):
+    def put(self, request):
+        token = request.GET.get("token")
+        if not token:
+            return JsonResponse({"code": 400,
+                                 "message": "缺少token参数"})
+        user = User.check_verify_email_token(token)
+        if user is None:
+            return JsonResponse({"code": 400,
+                                 "message": "传入token信息有误"})
+        try:
+            user.email_active = True
+            user.save()
+        except Exception as e:
+            return JsonResponse({"code": 400,
+                                 "message": "邮箱验证失败"})
+        return JsonResponse({"code": 0,
+                             "message": "OK"})
 
 
 
