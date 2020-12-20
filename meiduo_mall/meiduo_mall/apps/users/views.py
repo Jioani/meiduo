@@ -8,6 +8,7 @@ from django.shortcuts import render
 from django.views import View
 from django_redis import get_redis_connection
 
+from meiduo_mall.utils.mixins import LoginRequiredMixin
 from users.models import User
 # Create your views here.
 
@@ -147,3 +148,70 @@ class LogoutView(View):
                                  "message": "ok"})
         response.delete_cookie("username")
         return response
+
+
+class UserInfoView(LoginRequiredMixin, View):
+    def get(self, request):
+        user = request.user
+        info = {"username": user.username,
+                "mobile": user.mobile,
+                "email": user.email,
+                "email_active": user.email_active}
+        return JsonResponse({"code": 0,
+                             "message": "OK",
+                             "user": info})
+
+
+class UserEmailView(LoginRequiredMixin, View):
+    def put(self, request):
+        req_data = json.loads(request.body)
+        email = req_data.get("email")
+        if not email:
+            return JsonResponse({"code": 400,
+                                 "message": "缺少email参数"})
+        if not re.match(r"^[a-z0-9][\w\.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$", email):
+            return JsonResponse({"code": 400,
+                                 "message": "邮箱格式不正确"})
+        user = request.user
+        try:
+            user.email = email
+            user.save()
+        except Exception as e:
+            return JsonResponse({"code": 400,
+                                 "message": "邮箱设置失败"})
+        return JsonResponse({"code": 0,
+                             "message": "OK"})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
