@@ -11,6 +11,8 @@ from django.views import View
 from django_redis import get_redis_connection
 
 from meiduo_mall.utils.mixins import LoginRequiredMixin
+
+import areas
 from users.models import User, Address
 
 
@@ -276,35 +278,29 @@ class AddressView(LoginRequiredMixin, View):
                              'message': 'OK',
                              'address': address_data})
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def get(self, request):
+        try:
+            address = Address.objects.filter(user=request.user, is_delete=False)
+            address_list = []
+            for address_data in address:
+                address_dict = {"id": address_data.id,
+                                "title": address_data.title,
+                                "receiver": address_data.receiver,
+                                "province": address_data.province.name,
+                                "city": address_data.city.name,
+                                "district": address_data.district.name,
+                                "province_id": address_data.province_id,
+                                "city_id": address_data.city_id,
+                                "district_id": address_data.district_id,
+                                "place": address_data.place,
+                                "mobile": address_data.mobile,
+                                "phone": address_data.phone,
+                                "email": address_data.email}
+                address_list.append(address_dict)
+        except Exception as e:
+            return JsonResponse({"code": 400,
+                                 "message": "数据库操作出错"})
+        return JsonResponse({"code": 0,
+                             "message": "OK",
+                             "default_address_id": request.user.default_address_id,
+                             "addresses": address_list})
