@@ -304,3 +304,127 @@ class AddressView(LoginRequiredMixin, View):
                              "message": "OK",
                              "default_address_id": request.user.default_address_id,
                              "addresses": address_list})
+
+
+# API: PUT /addresses/(?P<address_id>\d+)/
+class UpdateAddressView(LoginRequiredMixin, View):
+    def put(self, request, address_id):
+        req_data = json.loads(request.body)
+        title = req_data.get("title")
+        receiver = req_data.get('receiver')
+        province_id = req_data.get('province_id')
+        city_id = req_data.get('city_id')
+        district_id = req_data.get('district_id')
+        place = req_data.get('place')
+        mobile = req_data.get('mobile')
+        phone = req_data.get('phone')
+        email = req_data.get('email')
+        if not all([title, receiver, province_id, city_id, district_id, place, mobile]):
+            return JsonResponse({"code": 400,
+                                 "message": "缺少必传参数"})
+        if not re.match(r'^1[3-9]\d{9}$', mobile):
+            return JsonResponse({"code": 400,
+                                 "message": "手机号不正确"})
+        if phone:
+            if not re.match(r'^(0[0-9]{2,3}-)?([2-9][0-9]{6,7})+(-[0-9]{1,4})?$', phone):
+                return JsonResponse({'code': 400,
+                                     'message': '参数phone有误'})
+        if email:
+            if not re.match(r'^[a-z0-9][\w\.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', email):
+                return JsonResponse({'code': 400,
+                                     'message': '参数email有误'})
+        try:
+            address = Address.objects.filter(user=request.user, id=address_id).update(title=title,
+                                                                                      receiver=receiver,
+                                                                                      province_id=province_id,
+                                                                                      city_id=city_id,
+                                                                                      district_id=district_id,
+                                                                                      place=place,
+                                                                                      mobile=mobile,
+                                                                                      phone=phone,
+                                                                                      email=email)
+            address = Address.objects.get(user=request.user, id=address_id)
+            address_dict = {"id": address.id,
+                            "title": address.title,
+                            "receiver": address.receiver,
+                            "province": address.province.name,
+                            "city": address.city.name,
+                            "district": address.district.name,
+                            "province_id": address.province_id,
+                            "city_id": address.city_id,
+                            "district_id": address.district_id,
+                            "place": address.place,
+                            "mobile": address.mobile,
+                            "phone": address.phone,
+                            "email": address.email}
+        except Exception as e:
+            print(e)
+            return JsonResponse({"code": 400,
+                                 "message": "操作数据库出错"})
+        return JsonResponse({"code": 0,
+                             "message": "OK",
+                             "address": address_dict})
+
+    def delete(self, request, address_id):
+        try:
+            address = Address.objects.filter(user=request.user, id=address_id).update(is_delete=True)
+        except:
+            return JsonResponse({"code": 400,
+                                 "message": "操作数据库出错"})
+        return JsonResponse({"code": 0,
+                             "message": "OK"})
+
+
+class DefaultAddressView(LoginRequiredMixin, View):
+    def put(self, request, address_id):
+        try:
+            user = User.objects.filter(id=request.user.id).update(default_address_id=address_id)
+        except Exception as e:
+            return JsonResponse({"code": 400,
+                                 "message": "操作数据库出错"})
+        return JsonResponse({"code": 0,
+                             "message": "OK"})
+
+
+class UpdateAddressTitleView(LoginRequiredMixin, View):
+    def put(self, request, address_id):
+        req_data = json.loads(request.body)
+        title = req_data.get("title")
+        try:
+            address = Address.objects.filter(user=request.user, id=address_id).update(title=title)
+        except:
+            return JsonResponse({"code": 400,
+                                 "message": "操作数据库出错"})
+        return JsonResponse({"code": 0,
+                             "message": "OK"})
+
+
+class UpdatePasswordView(LoginRequiredMixin, View):
+    def put(self, request):
+        req_data = json.loads(request.body)
+        old_password = req_data.get("old_password")
+        new_password = req_data.get("new_password")
+        new_password2 = req_data.get("new_password2")
+        try:
+            user = request.user
+        except Exception as e:
+            return JsonResponse({"code": 400,
+                                 "message": "操作数据库错误"})
+        if not user.check_password(old_password):
+            return JsonResponse({"code": 400,
+                                 "message": "旧密码输入错误"})
+        if not re.match(r'^[a-zA-Z0-9]{8,20}$', new_password):
+            return JsonResponse({'code': 400,
+                                 'message': 'password格式错误'})
+
+        if new_password != new_password2:
+            return JsonResponse({'code': 400,
+                                 'message': '两次密码不一致'})
+        try:
+            user.set_password(new_password)
+            user.save()
+        except Exception as e:
+            return JsonResponse({"code": 400,
+                                 "message": "操作数据库出错"})
+        return JsonResponse({"code": 0,
+                             "message": "OK"})
