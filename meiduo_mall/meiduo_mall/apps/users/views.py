@@ -379,6 +379,9 @@ class DefaultAddressView(LoginRequiredMixin, View):
     def put(self, request, address_id):
         try:
             user = User.objects.filter(id=request.user.id).update(default_address_id=address_id)
+            # user = request.user
+            # user.default_address_id = address_id
+            # user.save()
         except Exception as e:
             return JsonResponse({"code": 400,
                                  "message": "操作数据库出错"})
