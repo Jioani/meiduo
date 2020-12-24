@@ -248,3 +248,5 @@ EMAIL_HOST_PASSWORD = 'REWMRFOLLHUCOQTZ'
 EMAIL_FROM = '美多商城<ji928778728@163.com>'
 
 EMAIL_VERIFY_URL = 'http://www.meiduo.site:8080/success_verify_email.html?token='
+
+GENERATED_STATIC_HTML_FILES_DIR = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), "front_end_pc")
