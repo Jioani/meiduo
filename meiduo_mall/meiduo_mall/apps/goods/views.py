@@ -73,3 +73,43 @@ class SKUHotView(View):
         return JsonResponse({"code": 0,
                              "message": "OK",
                              "hot_skus": hot_skus})
+
+
+class SKUSearchView(View):
+    def get(self, request):
+        # ① 获取参数并进行校验
+        keyword = request.GET.get("q")
+        page = request.GET.get("page", 1)
+        page_size = request.GET.get("page_size", 6)
+        if not keyword:
+            return JsonResponse({"code": 400,
+                                 "message": "缺少必传参数"})
+
+        # ② 使用 haystack 检索数据
+        from haystack.query import SearchQuerySet
+        query = SearchQuerySet()
+        search_res = query.auto_query(keyword).load_all()
+
+        # ③ 对结果数据进行分页
+        # 对查询数据进行分页
+        from django.core.paginator import Paginator
+        paginator = Paginator(search_res, page_size)
+        results = paginator.get_page(page)
+
+        # ④ 组织响应数据并返回
+        sku_li = []
+        for res in results:
+            sku = res.object
+            sku_li.append({
+                "id": sku.id,
+                "name": sku.name,
+                "price": sku.price,
+                "default_image_url": "http://192.168.19.131:8888/" + sku.default_image.name,
+                "comments": sku.comments
+            })
+        return JsonResponse({"code": 0,
+                             "message": "OK",
+                             "count": paginator.count,
+                             "page_size": paginator.per_page,
+                             "query": keyword,
+                             "skus": sku_li})
