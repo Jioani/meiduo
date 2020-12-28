@@ -1,12 +1,21 @@
+import json
+
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
+
+import meiduo_mall.utils.mixins
+from django_redis import get_redis_connection
+
 from goods.models import GoodsCategory, SKU
 from goods.utils import get_breadcrumb
 
 
 # GET /list/(?P<category_id>\d+)/skus/
+from meiduo_mall.utils.mixins import LoginRequiredMixin
+
+
 class SKUListView(View):
     def get(self, request, category_id):
         page = request.GET.get("page", 1)
@@ -73,3 +82,36 @@ class SKUHotView(View):
         return JsonResponse({"code": 0,
                              "message": "OK",
                              "hot_skus": hot_skus})
+
+
+class BrowserHistoryView(LoginRequiredMixin, View):
+    def post(self, request):
+        req_data = json.loads(request.body)
+        sku_id = req_data.get("sku_id")
+        try:
+            redis_conn = get_redis_connection("history")
+            redis_conn.lrem(request.user.id, 0, sku_id)
+            redis_conn.lpush(request.user.id, sku_id)
+            redis_conn.ltrim(request.usre.id, 0, 4)
+        except Exception as e:
+            return JsonResponse({"code": 400,
+                                 "message": "操作数据库失败"})
+        return JsonResponse({"code": 0,
+                             "message": "OK"})
+
+    def get(self, request):
+        redis_conn = get_redis_connection("history")
+        sku_ids = redis_conn.lrange(request.user.id, 0, 4)
+        skus = SKU.objects.filter(id__in=sku_ids)
+        sku_li = []
+        for sku in skus:
+            sku_li.append({
+                "id": sku.id,
+                "name": sku.name,
+                "price": sku.price,
+                "comments": sku.comments,
+                "default_image_url": "http://192.168.19.131:8888/" + sku.default_image.name
+            })
+        return JsonResponse({"code": 0,
+                             "message": "OK",
+                             "skus": sku_li})

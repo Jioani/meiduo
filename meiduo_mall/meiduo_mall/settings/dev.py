@@ -176,6 +176,17 @@ CACHES = {
             }
         }
     },
+    "history": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://192.168.19.131:6379/5",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            # 从redis中查询出数据之后，会自动将bytes数据解码为str
+            "CONNECTION_POOL_KWARGS": {
+                'decode_responses': True
+            }
+        }
+    },
 }
 
 # 设置session数据存储到CACHES缓存中
