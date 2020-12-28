@@ -9,6 +9,7 @@ from django.views import View
 from django.conf import settings
 from django_redis import get_redis_connection
 
+from carts.utils import CartHelper
 from oauth.models import OAuthQQUser
 from oauth.utils import generate_secret_openid, check_secret_openid
 from users.models import User
@@ -52,6 +53,8 @@ class QQUserView(View):
             response = JsonResponse({"code": 0,
                                      "message": "OK"})
             response.set_cookie("username", user.username, max_age=14 * 24 * 3600)
+            cart_helper = CartHelper(request, response)
+            cart_helper.merge_cookie_cart_to_redis()
             return response
 
     def post(self, request):
@@ -93,7 +96,7 @@ class QQUserView(View):
                                      "message": "登录密码错误"})
         try:
             OAuthQQUser.objects.create(openid=openid,
-                                      user=user)
+                                       user=user)
         except Exception as e:
             print(e)
             return JsonResponse({'code': 400,
@@ -104,5 +107,7 @@ class QQUserView(View):
         # 设置cookie
         response.set_cookie('username', user.username,
                             max_age=3600 * 24 * 14)
+        cart_helper = CartHelper(request, response)
+        cart_helper.merge_cookie_cart_to_redis()
         return response
 

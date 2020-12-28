@@ -13,6 +13,7 @@ from django_redis import get_redis_connection
 from meiduo_mall.utils.mixins import LoginRequiredMixin
 
 import areas
+from carts.utils import CartHelper
 from users.models import User, Address
 
 
@@ -100,10 +101,14 @@ class RegisterView(View):
         except Exception as e:
             return JsonResponse({'code': 400,
                                  'message': '数据库保存错误'})
+        from django.contrib.auth import login
+        login(request, user)
         # ③ 返回响应
         response = JsonResponse({'code': 0,
                                  'message': 'OK'})
         response.set_cookie("username", user.username, max_age=30 * 24 * 3600)
+        cart_helper = CartHelper(request, response)
+        cart_helper.merge_cookie_cart_to_redis()
         return response
 
 
@@ -144,6 +149,8 @@ class LoginView(View):
             response.set_cookie("username", user.username)
             return response
         response.set_cookie("username", user.username, max_age=30 * 24 * 3600)
+        cart_helper = CartHelper(request, response)
+        cart_helper.merge_cookie_cart_to_redis()
         return response
 
 
