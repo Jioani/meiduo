@@ -92,7 +92,7 @@ class BrowserHistoryView(LoginRequiredMixin, View):
             redis_conn = get_redis_connection("history")
             redis_conn.lrem(request.user.id, 0, sku_id)
             redis_conn.lpush(request.user.id, sku_id)
-            redis_conn.ltrim(request.usre.id, 0, 4)
+            redis_conn.ltrim(request.user.id, 0, 4)
         except Exception as e:
             return JsonResponse({"code": 400,
                                  "message": "操作数据库失败"})
@@ -102,9 +102,10 @@ class BrowserHistoryView(LoginRequiredMixin, View):
     def get(self, request):
         redis_conn = get_redis_connection("history")
         sku_ids = redis_conn.lrange(request.user.id, 0, 4)
-        skus = SKU.objects.filter(id__in=sku_ids)
+        # skus = SKU.objects.filter(id__in=sku_ids)
         sku_li = []
-        for sku in skus:
+        for sku_id in sku_ids:
+            sku = SKU.objects.get(id=sku_id)
             sku_li.append({
                 "id": sku.id,
                 "name": sku.name,
