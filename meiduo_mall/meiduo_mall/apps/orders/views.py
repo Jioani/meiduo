@@ -110,22 +110,45 @@ class OrderCommitView(LoginRequiredMixin, View):
             cart_dict = cart_helper.get_redis_selected_cart()
             sku_ids = cart_dict.keys()
             for sku_id in sku_ids:
-                sku = SKU.objects.get(id=sku_id)
-                count = cart_dict[sku_id]
-                if count > sku.stock:
-                    # 数据库操作时，撤销事务中指定保存点之后的操作
-                    transaction.savepoint_commit(sid)
-                    return JsonResponse({"code": 400,
-                                         "message": "商品库存不足"})
-                sku.stock -= count
-                sku.sales += count
-                sku.save()
-                sku.spu.sales += count
-                sku.spu.save()
-                OrderGoods.objects.create(order=order,
-                                          sku=sku,
-                                          count=count,
-                                          price=sku.price)
+                for i in range(3):
+                    sku = SKU.objects.get(id=sku_id)
+                    count = cart_dict[sku_id]
+                    # 记录原始库存和销量
+                    origin_stock = sku.stock
+                    origin_sales = sku.sales
+                    print('下单用户：%s 商品库存：%d 购买数量：%d 尝试第 %d 次' % (
+                        user.username, sku.stock, count, i + 1))
+                    if count > sku.stock:
+                        # 数据库操作时，撤销事务中指定保存点之后的操作
+                        transaction.savepoint_commit(sid)
+                        return JsonResponse({"code": 400,
+                                             "message": "商品库存不足"})
+                    # 更新商品库存和销量
+                    new_stock = origin_stock - count
+                    new_sales = origin_sales + count
+                    # 注意：update 方法返回的是被更新的行数
+                    # update tb_sku set stock=<new_stock>, sales=<news_sales>
+                    # where id=<sku_id> and stock=<origin_stock>;
+                    res = SKU.objects.filter(id=sku.id,
+                                             stock=origin_stock).update(stock=new_stock,
+                                                                        sales=new_sales)
+                    if res == 0:
+                        if i == 2:
+                            # 尝试下单更新了 3 次，仍然失败，报下单失败错误
+                            # 数据库操作时，撤销事务中指定保存点之后的操作
+                            transaction.savepoint_commit(sid)
+                            return JsonResponse({"code": 400,
+                                                 "message": "下单失败!"})
+                        continue
+                    sku.spu.sales += count
+                    sku.spu.save()
+                    OrderGoods.objects.create(order=order,
+                                              sku=sku,
+                                              count=count,
+                                              price=sku.price)
+                    total_count += count
+                    total_amount += count * sku.price
+                    break
                 total_amount += freight
                 order.total_count = total_count
                 order.total_amount = total_amount
