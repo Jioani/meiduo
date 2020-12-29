@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'goods.apps.GoodsConfig',
     'carts.apps.CartsConfig',
     'orders.apps.OrdersConfig',
+    'payment.apps.PaymentConfig',
 ]
 
 MIDDLEWARE = [
@@ -274,3 +275,16 @@ EMAIL_FROM = '美多商城<ji928778728@163.com>'
 EMAIL_VERIFY_URL = 'http://www.meiduo.site:8080/success_verify_email.html?token='
 
 GENERATED_STATIC_HTML_FILES_DIR = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), "front_end_pc")
+
+
+# 支付宝开发者应用ID
+# 注意：此处替换为你的账号中沙箱应用的APPID，如果使用线上开发者应用，则替换为对应开发者应用的APPID
+ALIPAY_APPID = '2021000116684301'
+# 是否使用沙箱环境
+# 注意：如果使用线上开发者应用，此处设置为：False
+ALIPAY_DEBUG = True
+# 支付宝网关地址
+# 注意：此处为支付宝沙箱环境的网关地址，如果使用线上开发者应用，此处需替换为支付宝线上环境的网关地址
+ALIPAY_URL = 'https://openapi.alipaydev.com/gateway.do'
+# 用户授权支付后的回调地址
+ALIPAY_RETURN_URL = "http://www.meiduo.site:8080/pay_success.html"
