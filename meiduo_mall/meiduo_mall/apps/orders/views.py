@@ -123,6 +123,8 @@ class OrderCommitView(LoginRequiredMixin, View):
                         transaction.savepoint_commit(sid)
                         return JsonResponse({"code": 400,
                                              "message": "商品库存不足"})
+                    import time
+                    time.sleep(10)
                     # 更新商品库存和销量
                     new_stock = origin_stock - count
                     new_sales = origin_sales + count

@@ -18,7 +18,7 @@
                 <div v-if="username" class="login_btn fl">
                     欢迎您：<em>{{ username }}</em>
                     <span>|</span>
-                    <a @click="logout">退出</a>
+                    <a @click="logoutfunc">退出</a>
                 </div>
                 <div v-else class="login_btn fl">
                     <a href="login.html">登录</a>
@@ -75,15 +75,23 @@
         var vm = new Vue({
             el: '#app',
             data: {
-                host,
+                host: host,
                 trade_id: '',
-                username: sessionStorage.username || localStorage.username,
-                token: sessionStorage.token || localStorage.token,
+                username: '',
             },
             mounted: function(){
+                // 向API服务请求获取csrftoken的值并存入cookie
+                this.get_csrf_token();
+
+                // 获取登录用户名
+                this.username = Cookies.get('username');
+
                 axios.put(this.host+'/payment/status/'+document.location.search,{}, {
                         responseType: 'json',
-                        withCredentials:true
+                        withCredentials:true,
+                        headers: {
+                            'X-CSRFToken': Cookies.get('csrftoken')
+                        }
                     })
                     .then(response => {
                         this.trade_id = response.data.trade_id;
@@ -93,12 +101,34 @@
                     })
             },
             methods: {
-                // 退出
-                logout: function(){
-                    sessionStorage.clear();
-                    localStorage.clear();
-                    location.href = '/login.html';
-                }
+                // 获取csrf_token的值
+                get_csrf_token: function(){
+                    var url = this.host + "/csrf_token/";
+                    axios.get(url)
+                    .then(response => {
+                        // 将响应数据中的csrf_token的值存入 csrftoken cookie
+                        Cookies.set('csrftoken', response.data.csrf_token);
+                    }).catch(error => {
+                        console.log(error);
+                    })
+                },
+                // 退出登录按钮
+                logoutfunc: function () {
+                    var url = this.host + '/logout/';
+                    axios.delete(url, {
+                        responseType: 'json',
+                        withCredentials:true,
+                        headers: {
+                            'X-CSRFToken': Cookies.get('csrftoken')
+                        }
+                    })
+                    .then(response => {
+                        location.href = 'login.html';
+                    })
+                    .catch(error => {
+                        console.log(error.response);
+                    })
+                },
             }
         })
     </script>
