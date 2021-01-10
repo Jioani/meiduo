@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/2.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.2/ref/settings/
 """
-
+import datetime
 import os
 import sys
 
@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     'carts.apps.CartsConfig',
     'orders.apps.OrdersConfig',
     'payment.apps.PaymentConfig',
+    'rest_framework',
+    'meiduo_admin.apps.MeiduoAdminConfig',
 ]
 
 MIDDLEWARE = [
@@ -288,3 +290,20 @@ ALIPAY_DEBUG = True
 ALIPAY_URL = 'https://openapi.alipaydev.com/gateway.do'
 # 用户授权支付后的回调地址
 ALIPAY_RETURN_URL = "http://www.meiduo.site:8080/pay_success.html"
+
+REST_FRAMEWORK = {
+    # 指定 DRF 框架使用的异常处理函数
+    'EXCEPTION_HANDLER': 'meiduo_admin.utils.exceptions.exception_handler',
+    # 注意：此配置是直接在原来的 REST_FRAMEWORK 配置项下进行配置，不要把之前的覆盖了
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        # 引入 JWT 认证机制，当客户端将 jwt token 传递给服务器之后
+        # 此认证机制会自动校验 jwt token 的有效性，无效会直接返回401(未认证错误)
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+    ),
+}
+
+# JWT 扩展配置
+JWT_AUTH = {
+    # 设置生成 jwt token 的有效时间
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
+}
