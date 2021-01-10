@@ -29,8 +29,7 @@ class AdminAuthSerializer(serializers.ModelSerializer):
             return attrs
 
     def create(self, validated_data):
-        username = validated_data["user"]
-        user = User.objects.get(username=username)
+        user = validated_data["user"]
         from rest_framework_jwt.settings import api_settings
 
         jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
@@ -40,3 +39,9 @@ class AdminAuthSerializer(serializers.ModelSerializer):
         token = jwt_encode_handler(payload)
         user.token = token
         return user
+
+
+class UserInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("id", "username", "mobile", "email")
