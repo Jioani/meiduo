@@ -21,10 +21,10 @@ class AdminAuthSerializer(serializers.ModelSerializer):
         try:
             user = User.objects.get(username=username, is_staff=True)
         except User.DoesNotExist:
-            raise serializers.as_serializer_error("用户名或者密码错误")
+            raise serializers.ValidationError("用户名或者密码错误")
         else:
             if not user.check_password(password):
-                raise serializers.as_serializer_error("用户名或者密码错误")
+                raise serializers.ValidationError("用户名或者密码错误")
             attrs["user"] = user
             return attrs
 
