@@ -7,6 +7,7 @@ from meiduo_admin.serializers.skus import SKUImageSerializer, SKUSimpleSerialize
 
 
 class SKUImageViewSet(ModelViewSet):
+    lookup_value_regex = "\d+"
     permission_classes = [IsAdminUser]
     queryset = SKUImage.objects.all()
     serializer_class = SKUImageSerializer
