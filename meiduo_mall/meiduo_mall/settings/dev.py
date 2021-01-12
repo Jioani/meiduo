@@ -309,3 +309,8 @@ JWT_AUTH = {
     # 设置生成 jwt token 的有效时间
     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
 }
+
+# FastDFS 客户端配置文件 client.conf 的路径
+FDFS_CLIENT_CONF = os.path.join(BASE_DIR, 'utils/fastdfs/client.conf')
+# FastDFS 文件存储系统 storage 容器中 nginx 服务器的地址
+FDFS_URL = 'http://192.168.19.131:8888/'

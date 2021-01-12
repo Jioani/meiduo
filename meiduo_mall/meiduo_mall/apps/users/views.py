@@ -11,6 +11,8 @@ from django.views import View
 from django_redis import get_redis_connection
 
 from meiduo_mall.utils.mixins import LoginRequiredMixin
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 import areas
 from carts.utils import CartHelper
@@ -21,6 +23,9 @@ from users.models import User, Address
 
 
 # GET /usernames/(?P<username>[a-zA-Z0-9_-]{5,20})/count/
+from users.serializers import RegisterSerializer
+
+
 class UsernameCountView(View):
     def get(self, request, username):
         try:
@@ -45,71 +50,26 @@ class MobileCountView(View):
                              "count": count})
 
 
-class RegisterView(View):
+class RegisterView(APIView):
     def post(self, request):
-        """注册用户信息保存"""
-        # ① 获取参数并进行校验
-        req_data = json.loads(request.body.decode())
-        username = req_data.get('username')
-        password = req_data.get('password')
-        password2 = req_data.get('password2')
-        mobile = req_data.get('mobile')
-        allow = req_data.get('allow')
-        sms_code = req_data.get('sms_code')
-
-        if not all([username, password, password2, mobile, allow, sms_code]):
-            return JsonResponse({'code': 400,
-                                 'message': '缺少必传参数'})
-
-        if not re.match(r'^[a-zA-Z0-9_-]{5,20}$', username):
-            return JsonResponse({'code': 400,
-                                 'message': 'username格式错误'})
-
-        if not re.match(r'^[a-zA-Z0-9]{8,20}$', password):
-            return JsonResponse({'code': 400,
-                                 'message': 'password格式错误'})
-
-        if password != password2:
-            return JsonResponse({'code': 400,
-                                 'message': '两次密码不一致'})
-
-        if not re.match(r'^1[3-9]\d{9}$', mobile):
-            return JsonResponse({'code': 400,
-                                 'message': '手机号格式错误'})
-
-        if not allow:
-            return JsonResponse({'code': 400,
-                                 'message': '请同意协议!'})
-
-        # 短信验证码检验
-        redis_conn = get_redis_connection('verify_code')
-        sms_code_redis = redis_conn.get('sms_%s' % mobile)
-
-        if not sms_code_redis:
-            return JsonResponse({'code': 400,
-                                 'message': '短信验证码过期'})
-
-        if sms_code != sms_code_redis:
-            return JsonResponse({'code': 400,
-                                 'message': '短信验证码错误'})
-
+        # """注册用户信息保存"""
+        # # ① 获取参数并进行校验
+        # req_data = json.loads(request.body.decode())
+        # username = req_data.get('username')
+        # password = req_data.get('password')
+        # password2 = req_data.get('password2')
+        # mobile = req_data.get('mobile')
+        # allow = req_data.get('allow')
+        # sms_code = req_data.get('sms_code')
+        #
+        # if not all([username, password, password2, mobile, allow, sms_code]):
+        #     return JsonResponse({'code': 400,
+        #                          'message': '缺少必传参数'})
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         # ② 保存新增用户数据到数据库
-        try:
-            user = User.objects.create_user(username=username,
-                                            password=password,
-                                            mobile=mobile)
-        except Exception as e:
-            return JsonResponse({'code': 400,
-                                 'message': '数据库保存错误'})
-        from django.contrib.auth import login
-        login(request, user)
-        # ③ 返回响应
-        response = JsonResponse({'code': 0,
-                                 'message': 'OK'})
-        response.set_cookie("username", user.username, max_age=30 * 24 * 3600)
-        cart_helper = CartHelper(request, response)
-        cart_helper.merge_cookie_cart_to_redis()
-        return response
+        serializer.save()
+        return Response(serializer.data, status=201)
 
 
 class CSRFTokenView(View):
